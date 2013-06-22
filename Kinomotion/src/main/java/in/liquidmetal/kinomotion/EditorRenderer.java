@@ -31,7 +31,7 @@ public class EditorRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceChanged(GL10 gl10, int width, int height) {
-        float arenaRatio = height/ height;
+        float arenaRatio = 480/ 640;
         int x, y, viewWidth, viewHeight;
 
         // Limited by width?

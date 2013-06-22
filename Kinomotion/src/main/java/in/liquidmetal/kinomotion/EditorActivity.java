@@ -6,10 +6,12 @@ import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.graphics.Color;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +33,7 @@ public class EditorActivity extends Activity {
     private Button btnDraw;
     private Button btnRadius;
     private Button btnSmooth;
+    private LinearLayout uberLayout;
 
 
     @Override
@@ -40,12 +43,15 @@ public class EditorActivity extends Activity {
         // The editor works only in landscape mode
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
+
         // Uber level horizontal layout
-        LinearLayout ll = new LinearLayout(this);
-        ll.setOrientation(LinearLayout.HORIZONTAL);
-        ll.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        uberLayout = new LinearLayout(this);
+        uberLayout.setOrientation(LinearLayout.HORIZONTAL);
+        uberLayout.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
 
         LinearLayout buttons = new LinearLayout(this);
+        buttons.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
         buttons.setOrientation(LinearLayout.VERTICAL);
         btnMode = new Button(this);
         btnMode.setText("Mode");
@@ -63,30 +69,39 @@ public class EditorActivity extends Activity {
         btnSmooth.setText("Smooth");
         buttons.addView(btnSmooth);
 
-        buttons.setLayoutParams(new ActionBar.LayoutParams(256, ViewGroup.LayoutParams.MATCH_PARENT));
+
 
 
         LinearLayout viewer = new LinearLayout(this);
         viewer.setOrientation(LinearLayout.VERTICAL);
+        viewer.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         // The viewer
         mGLView = new EditorView(this, "/sdcard0/DCIM/kinomotion/testvideo.mp4");
-        mGLView.setMinimumWidth(950);
-        mGLView.setMinimumHeight(550);
+        //mGLView.setMinimumWidth(950);
+        //mGLView.setMinimumHeight(550);
+        mGLView.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         viewer.addView(mGLView);
 
         // The seekbar at the bottom of the screen
         mSeekBar = new SeekBar(this);
+        mSeekBar.setMinimumHeight(128);
+        mSeekBar.setMax(VideoCapturer.frames.length - 1);
+        mSeekBar.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         viewer.addView(mSeekBar);
 
-        viewer.setLayoutParams(new ActionBar.LayoutParams(650, ViewGroup.LayoutParams.MATCH_PARENT));
 
 
 
-        setContentView(ll);
 
-        
+
+        uberLayout.addView(buttons);
+        uberLayout.addView(viewer);
+        setContentView(uberLayout);
+
+        int width = mGLView.getWidth();
+        int height = mGLView.getHeight();
 
         int l = VideoCapturer.frames.length;
     }
