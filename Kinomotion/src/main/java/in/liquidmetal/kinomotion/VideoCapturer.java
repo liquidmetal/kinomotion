@@ -25,7 +25,9 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
     public static Camera.Parameters mParameters;
 
     private static final int NUM_FRAMES = 30;
+    private static final int SKIP_INITIAL = 10;
     private int framesCaptured = 0;
+    private int framesSkipped = 0;
     public static byte[][] frames = new byte[NUM_FRAMES][];
     private boolean isGrabbing = false;
     private CameraActivity activity;
@@ -43,6 +45,10 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
         mParameters = mCamera.getParameters();
         getHolder().setFixedSize(720, 1280);
         final Camera.Size previewSize = mParameters.getPreviewSize();
+
+        mParameters.set("orientation", "landscape");
+        mCamera.setParameters(mParameters);
+
         final VideoCapturer self = this;
 
         try {
@@ -66,6 +72,11 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
                         Canvas recCanvas = new Canvas();
                         recCanvas.drawColor(Color.RED);
                         self.draw(recCanvas);
+                    }
+
+                    if(framesSkipped<SKIP_INITIAL) {
+                        framesSkipped++;
+                        return;
                     }
 
                     if(framesCaptured<NUM_FRAMES)
