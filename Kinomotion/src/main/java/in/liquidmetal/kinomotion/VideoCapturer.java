@@ -1,6 +1,7 @@
 package in.liquidmetal.kinomotion;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -27,11 +28,12 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
     private int framesCaptured = 0;
     private byte[][] frames = new byte[NUM_FRAMES][];
     private boolean isGrabbing = false;
+    private CameraActivity activity;
 
     public VideoCapturer(Context context) {
         super(context);
         getHolder().addCallback(this);
-
+        this.activity = (CameraActivity)context;
     }
 
     @Override
@@ -72,7 +74,7 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
                         // Stop grabbing... we can now move onto the editor with all the data we've
                         // collected
                         self.stopGrabbing();
-
+                        self.startEditor();
                     }
                 }
             }
@@ -89,6 +91,11 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
     public void stopGrabbing() {
         isGrabbing = false;
         mCamera.stopPreview();
+    }
+
+    public void startEditor() {
+        Camera.Size sz = mParameters.getPreviewSize();
+        activity.moveToEditor(frames, sz.width, sz.height);
     }
 
     @Override

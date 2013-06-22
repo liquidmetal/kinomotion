@@ -4,6 +4,7 @@ import in.liquidmetal.kinomotion.util.SystemUiHider;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -43,6 +44,19 @@ public class CameraActivity extends Activity {
         mVideoCapturer = new VideoCapturer(this);
 
         setContentView(mVideoCapturer);
+    }
+
+    public void moveToEditor(byte[][] frames, int width, int height) {
+        Intent intent = new Intent(this, EditorActivity.class);
+
+        int numFrames = frames.length;
+        for(int i=0;i<numFrames;i++) {
+            intent.putExtra("in.liquidmetal.CameraActivity.frame" + i, frames[i]);
+        }
+
+        intent.putExtra("in.liquidmetal.CameraActivity.width", width);
+        intent.putExtra("in.liquidmetal.CameraActivity.height", height);
+        startActivity(intent);
     }
 
     @Override
