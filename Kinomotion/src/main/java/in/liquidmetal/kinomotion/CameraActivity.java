@@ -4,12 +4,23 @@ import in.liquidmetal.kinomotion.util.SystemUiHider;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.opengl.GLSurfaceView;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
+import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
+import android.widget.LinearLayout;
+
+import java.io.ByteArrayOutputStream;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -17,17 +28,21 @@ import android.view.View;
  *
  * @see SystemUiHider
  */
-public class EditorActivity extends Activity {
-    private EditorView mGLView;
+public class CameraActivity extends Activity {
+    private VideoCapturer mVideoCapturer;
+    public CameraActivity() {
+        super();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mGLView = new EditorView(this, "/sdcard0/DCIM/kinomotion/testvideo.mp4");
 
-        setContentView(mGLView);
-        mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+
+        mVideoCapturer = new VideoCapturer(this);
+
+        setContentView(mVideoCapturer);
     }
 
     @Override
