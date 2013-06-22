@@ -46,21 +46,39 @@ public class CameraActivity extends Activity {
         setContentView(mVideoCapturer);
     }
 
-    public void moveToEditor(byte[][] frames, int width, int height) {
+    public void moveToEditor() {
         Intent intent = new Intent(this, EditorActivity.class);
-
-        int numFrames = frames.length;
-        for(int i=0;i<numFrames;i++) {
-            intent.putExtra("in.liquidmetal.CameraActivity.frame" + i, frames[i]);
-        }
-
-        intent.putExtra("in.liquidmetal.CameraActivity.width", width);
-        intent.putExtra("in.liquidmetal.CameraActivity.height", height);
         startActivity(intent);
     }
 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // The activity is about to become visible.
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // The activity has become visible (it is now "resumed").
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Another activity is taking focus (this activity is about to be "paused").
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // The activity is no longer visible (it is now "stopped")
+    }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // The activity is about to be destroyed.
     }
 }

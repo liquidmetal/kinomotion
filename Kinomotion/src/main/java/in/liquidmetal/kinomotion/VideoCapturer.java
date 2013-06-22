@@ -22,11 +22,11 @@ import java.io.IOException;
  */
 public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback {
     private Camera mCamera;
-    private Camera.Parameters mParameters;
+    public static Camera.Parameters mParameters;
 
-    private final int NUM_FRAMES = 30;
+    private static final int NUM_FRAMES = 30;
     private int framesCaptured = 0;
-    private byte[][] frames = new byte[NUM_FRAMES][];
+    public static byte[][] frames = new byte[NUM_FRAMES][];
     private boolean isGrabbing = false;
     private CameraActivity activity;
 
@@ -94,8 +94,7 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
     }
 
     public void startEditor() {
-        Camera.Size sz = mParameters.getPreviewSize();
-        activity.moveToEditor(frames, sz.width, sz.height);
+        activity.moveToEditor();
     }
 
     @Override
@@ -105,6 +104,6 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-
+        mCamera.release();
     }
 }
