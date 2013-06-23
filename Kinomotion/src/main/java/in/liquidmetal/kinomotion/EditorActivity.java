@@ -1,7 +1,6 @@
 package in.liquidmetal.kinomotion;
 
 import in.liquidmetal.kinomotion.util.SystemUiHider;
-
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
@@ -25,6 +24,7 @@ import android.hardware.Camera;
 import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -38,6 +38,13 @@ import android.widget.LinearLayout;
 import android.widget.NumberPicker;
 import android.widget.SeekBar;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
+import java.nio.ShortBuffer;
 import java.util.LinkedList;
 
 /**
@@ -52,6 +59,7 @@ public class EditorActivity extends Activity {
     private SeekBar mSeekBar;
     private Button btnMode;
     private Button btnDraw;
+    private Button btnSave;
     private NumberPicker npRadius;
     private NumberPicker npSmooth;
     private LinearLayout uberLayout;
@@ -146,11 +154,12 @@ public class EditorActivity extends Activity {
         });*/
         viewer.addView(img);
 
+
+
         // The seekbar at the bottom of the screen
         mSeekBar = new SeekBar(this);
-        mSeekBar.setMinimumHeight(128);
         mSeekBar.setMax(VideoCapturer.frames.length - 1);
-        mSeekBar.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 128));
+        mSeekBar.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int value, boolean fromUser) {
@@ -167,15 +176,28 @@ public class EditorActivity extends Activity {
 
             }
         });
-
         viewer.addView(mSeekBar);
+
+        LinearLayout saveBar = new LinearLayout(this);
+        saveBar.setOrientation(LinearLayout.HORIZONTAL);
+        saveBar.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        btnSave = new Button(this);
+        btnSave.setText("Save");
+        btnSave.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        btnSave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                saveComp();
+            }
+        });
+        saveBar.addView(btnSave);
 
 
 
         uberLayout.addView(buttons);
         uberLayout.addView(viewer);
-
-
+        uberLayout.addView(saveBar);
 
 
         bmMask = Bitmap.createBitmap(frameWidth, frameHeight, Bitmap.Config.ARGB_8888);
@@ -194,6 +216,25 @@ public class EditorActivity extends Activity {
             optToolMode = 0;
             btnDraw.setText("Paint");
         }
+    }
+
+    public void saveComp() {
+        AnimatedGifWriter agw = new AnimatedGifWriter();
+        agw.setFrameRate(30);
+        agw.setSize(640, 480);
+        agw.setQuality(50);
+        String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath();
+        agw.start(path + "/kinomotion/temp.gif");
+        for(int i = 0;i<VideoCapturer.frames.length;i++) {
+            /*Bitmap bmp = Bitmap.createBitmap(frameWidth, frameHeight, Bitmap.Config.ARGB_8888);
+            ByteBuffer bb = ByteBuffer.allocate(VideoCapturer.frames[i].length);
+            bb.put(VideoCapturer.frames[i]);
+
+            bmp.setPixels(bb.asIntBuffer().array(), 0, frameWidth, 0, 0, frameWidth, frameHeight);*/
+
+            agw.addFrame(VideoCapturer.frames[i]);
+        }
+        agw.finish();
     }
 
     public boolean onTouchEvent(MotionEvent e) {
@@ -327,6 +368,7 @@ public class EditorActivity extends Activity {
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
+        updateViewer();
     }
 
     @Override
@@ -380,5 +422,6 @@ public class EditorActivity extends Activity {
         });
 
         builder.create().show();
+        AnimatedGifWriter agw = new AnimatedGifWriter();
     }
 }
