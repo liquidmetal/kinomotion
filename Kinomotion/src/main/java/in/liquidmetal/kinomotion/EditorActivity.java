@@ -38,6 +38,8 @@ import android.widget.LinearLayout;
 import android.widget.NumberPicker;
 import android.widget.SeekBar;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.DoubleBuffer;
@@ -45,6 +47,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
+import java.util.Date;
 import java.util.LinkedList;
 
 /**
@@ -219,22 +222,33 @@ public class EditorActivity extends Activity {
     }
 
     public void saveComp() {
-        AnimatedGifWriter agw = new AnimatedGifWriter();
-        agw.setFrameRate(30);
-        agw.setSize(640, 480);
-        agw.setQuality(50);
-        String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath();
-        agw.start(path + "/kinomotion/temp.gif");
+        String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath() + "/kinomotion/" + (new Date()).getTime();
+        File p = new File(path);
+        p.mkdirs();
+        //agw.start(path + "/kinomotion/temp.gif");
         for(int i = 0;i<VideoCapturer.frames.length;i++) {
-            /*Bitmap bmp = Bitmap.createBitmap(frameWidth, frameHeight, Bitmap.Config.ARGB_8888);
-            ByteBuffer bb = ByteBuffer.allocate(VideoCapturer.frames[i].length);
-            bb.put(VideoCapturer.frames[i]);
 
-            bmp.setPixels(bb.asIntBuffer().array(), 0, frameWidth, 0, 0, frameWidth, frameHeight);*/
 
-            agw.addFrame(VideoCapturer.frames[i]);
+            int numValues = VideoCapturer.frames[i].length;
+            int[] intArray = new int[numValues/3];
+            for(int k=0;k<numValues/3;k++) {
+                intArray[k] = (VideoCapturer.frames[i][k*3] << 16) | (VideoCapturer.frames[i][k*3+1] << 8) | (VideoCapturer.frames[i][k*3+2]);
+            }
+
+            currentFrame = BitmapFactory.decodeByteArray(VideoCapturer.frames[i], 0, VideoCapturer.frames[i].length);
+            updateComp();
+
+            try {
+                FileOutputStream fos = new FileOutputStream(path + "/frame" + i + ".png");
+                currentFrameComposite.compress(Bitmap.CompressFormat.PNG, 90, fos);
+            }
+            catch (Exception e) {
+                System.exit(1);
+            }
+
+            //agw.addFrame(VideoCapturer.frames[i]);
         }
-        agw.finish();
+        //agw.finish();
     }
 
     public boolean onTouchEvent(MotionEvent e) {

@@ -26,11 +26,11 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
     private Camera mCamera;
     public static Camera.Parameters mParameters;
 
-    private static final int NUM_FRAMES = 30;
-    private static final int SKIP_INITIAL = 10;
+    private static final int NUM_FRAMES = 120;
+    private static final int SKIP_INITIAL = 20;
     private int framesCaptured = 0;
     private int framesSkipped = 0;
-    public static byte[][] frames = null;
+    public static byte[][] frames = new byte[NUM_FRAMES][];
     private boolean isGrabbing = false;
     private CameraActivity activity;
 
@@ -43,8 +43,7 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
     public void doResume() {
         framesSkipped = 0;
         framesCaptured = 0;
-        frames = null;
-        frames = new byte[NUM_FRAMES][];
+        //frames = null;
         isGrabbing = false;
     }
 
@@ -53,6 +52,7 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
 
         mCamera = Camera.open();
         mParameters = mCamera.getParameters();
+        //VideoCapturer.frames = new byte[NUM_FRAMES][];
         getHolder().setFixedSize(720, 1280);
         final Camera.Size previewSize = mParameters.getPreviewSize();
 
@@ -103,7 +103,7 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
                         return;
 
                     if(framesCaptured<NUM_FRAMES)
-                        frames[framesCaptured++] = imageBytes;
+                        VideoCapturer.frames[framesCaptured++] = imageBytes.clone();
                     else {
                         // Stop grabbing... we can now move onto the editor with all the data we've
                         // collected
