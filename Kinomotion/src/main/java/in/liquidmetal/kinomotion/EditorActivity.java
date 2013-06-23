@@ -5,6 +5,8 @@ import in.liquidmetal.kinomotion.util.SystemUiHider;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -24,6 +26,7 @@ import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -64,6 +67,10 @@ public class EditorActivity extends Activity {
     private LinkedList<Point> paintedPoints = new LinkedList<Point>();
 
     private int optDisplayMode = 0;     // 0 = original frame, 1 = mask, 2 = combined
+    private int optToolMode = 0;        // 0 = paint, 1 = erase
+    private int currentFrameNumber = 0;
+    private boolean isDirty = false;
+    private boolean doCancel = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +78,10 @@ public class EditorActivity extends Activity {
 
         // The editor works only in landscape mode
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+
+        Camera.Size sz = VideoCapturer.mParameters.getPreviewSize();
+        frameWidth = sz.width;
+        frameHeight = sz.height;
 
 
         // Uber level horizontal layout
@@ -83,7 +94,7 @@ public class EditorActivity extends Activity {
         buttons.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
         buttons.setOrientation(LinearLayout.VERTICAL);
         btnMode = new Button(this);
-        btnMode.setText("Mode");
+        btnMode.setText("Org");
         btnMode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -93,20 +104,27 @@ public class EditorActivity extends Activity {
         buttons.addView(btnMode);
 
         btnDraw = new Button(this);
-        btnDraw.setText("Draw");
+        btnDraw.setText("Paint");
+        btnDraw.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                swapTool();
+            }
+        });
         buttons.addView(btnDraw);
 
         npRadius = new NumberPicker(this);
         npRadius.setMinValue(1);
         npRadius.setMaxValue(100);
         npRadius.setOrientation(NumberPicker.VERTICAL);
+        npRadius.setValue(15);
         buttons.addView(npRadius);
 
-        /*btnSmooth = new Button(this);
-        btnSmooth.setText("Smooth");
-        buttons.addView(btnSmooth);*/
-
-
+        npSmooth = new NumberPicker(this);
+        npSmooth.setMinValue(0);
+        npSmooth.setMaxValue(100);
+        npSmooth.setValue(15);
+        buttons.addView(npSmooth);
 
 
         LinearLayout viewer = new LinearLayout(this);
@@ -118,7 +136,7 @@ public class EditorActivity extends Activity {
         //mGLView.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 660));
         //mGLView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         img = new ImageView(this);
-        img.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 660));
+        img.setLayoutParams(new ActionBar.LayoutParams(frameWidth, frameHeight));
 
         /*img.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -157,23 +175,25 @@ public class EditorActivity extends Activity {
         uberLayout.addView(buttons);
         uberLayout.addView(viewer);
 
-        Camera.Size sz = VideoCapturer.mParameters.getPreviewSize();
-        frameWidth = sz.width;
-        frameHeight = sz.height;
+
 
 
         bmMask = Bitmap.createBitmap(frameWidth, frameHeight, Bitmap.Config.ARGB_8888);
-        bmMask.eraseColor(0x000000FF);
-
-        Canvas c = new Canvas(bmMask);
-        Paint p = new Paint();
-        p.setColor(Color.WHITE);
-        p.setStyle(Paint.Style.FILL);
-        c.drawCircle(70, 70, 50, p);
+        bmMask.eraseColor(0xFF000000);
 
         firstFrame = BitmapFactory.decodeByteArray(VideoCapturer.frames[0], 0, VideoCapturer.frames[0].length);
 
         setContentView(uberLayout);
+    }
+
+    public void swapTool() {
+        if(optToolMode==0) {
+            optToolMode = 1;
+            btnDraw.setText("Erase");
+        } else {
+            optToolMode = 0;
+            btnDraw.setText("Paint");
+        }
     }
 
     public boolean onTouchEvent(MotionEvent e) {
@@ -181,14 +201,19 @@ public class EditorActivity extends Activity {
             int x = (int)e.getX();
             int y = (int)e.getY();
 
-            int left = img.getLeft();
-            int top = img.getTop();
+            int[] pos = new int[2];
+            img.getLocationOnScreen(pos);
+
+            int left = pos[0];
+            int top = pos[1];
+
             Rect visibleRect = new Rect(left, top, left+img.getMeasuredWidth(), top+img.getMeasuredHeight());
             if(!visibleRect.contains(x, y))
                 return true;
 
-            Point pt = new Point(x - img.getLeft(), y - img.getTop());
+            Point pt = new Point(x-left, y-top);
             paintedPoints.add(pt);
+            isDirty = true;
 
             return true;
         } else if(e.getAction() == MotionEvent.ACTION_UP) {
@@ -196,7 +221,15 @@ public class EditorActivity extends Activity {
             Canvas c = new Canvas(bmMask);
             Paint p = new Paint();
             p.setColor(Color.WHITE);
+            if(optToolMode == 1) {
+                p.setColor(0xFF000000);
+            }
             p.setStrokeWidth(npRadius.getValue());
+            p.setStrokeMiter(1);
+
+            int blurRadius = npSmooth.getValue();
+            if(blurRadius>0)
+                p.setMaskFilter(new BlurMaskFilter(npSmooth.getValue(), BlurMaskFilter.Blur.NORMAL));
 
             Point previous = null;
             for(Point pt:paintedPoints) {
@@ -210,6 +243,7 @@ public class EditorActivity extends Activity {
             }
 
             paintedPoints.clear();
+            updateViewer();
         }
 
         return true;
@@ -221,7 +255,7 @@ public class EditorActivity extends Activity {
         bmMask.getPixels(alphaPix, 0, frameWidth, 0, 0, frameWidth, frameHeight);
         int count = frameWidth * frameHeight;
         for (int i = 0; i < count; ++i)
-            alphaPix[i] = (alphaPix[i] << 2) & 0xFF000000;
+            alphaPix[i] = (alphaPix[i] << 8) & 0xFF000000;
 
         Bitmap tempAlpha = Bitmap.createBitmap(alphaPix, frameWidth, frameHeight, Bitmap.Config.ARGB_8888);
 
@@ -246,20 +280,32 @@ public class EditorActivity extends Activity {
         if(optDisplayMode>2)
             optDisplayMode = 0;
 
+        switch(optDisplayMode) {
+            case 0:
+                btnMode.setText("Org");
+                break;
+
+            case 1:
+                btnMode.setText("Msk");
+                break;
+
+            case 2:
+                btnMode.setText("Fin");
+                break;
+        }
+
         updateViewer();
     }
 
     private void onSeekbarPositionChange(int newFrame) {
-        byte[] frame = VideoCapturer.frames[newFrame];
-        currentFrame = BitmapFactory.decodeByteArray(frame, 0, frame.length);
-
-        if(optDisplayMode==2)
-            updateComp();
+        currentFrameNumber = newFrame;
         updateViewer();
-
     }
 
     private void updateViewer() {
+        byte[] frame = VideoCapturer.frames[currentFrameNumber];
+        currentFrame = BitmapFactory.decodeByteArray(frame, 0, frame.length);
+
         switch(optDisplayMode) {
             case 0:
                 img.setImageBitmap(currentFrame);
@@ -270,6 +316,7 @@ public class EditorActivity extends Activity {
                 break;
 
             case 2:
+                updateComp();
                 img.setImageBitmap(currentFrameComposite);
                 //img.setImageBitmap(firstFrame);
                 break;
@@ -308,5 +355,30 @@ public class EditorActivity extends Activity {
         // The activity is about to be destroyed.
 
         VideoCapturer.frames = null;
+    }
+
+    public void executeCancel() {
+        super.onBackPressed();
+    }
+
+    @Override
+    public void onBackPressed() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Are you sure?").setMessage("You will lose changes you've made here and will shoot another movie.");
+        builder.setCancelable(false);
+
+        builder.setPositiveButton("New movie", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                executeCancel();
+            }
+        });
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+            }
+        });
+
+        builder.create().show();
     }
 }

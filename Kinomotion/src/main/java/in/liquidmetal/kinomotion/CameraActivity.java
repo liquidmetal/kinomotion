@@ -3,6 +3,7 @@ package in.liquidmetal.kinomotion;
 import in.liquidmetal.kinomotion.util.SystemUiHider;
 
 import android.annotation.TargetApi;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -19,6 +20,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import java.io.ByteArrayOutputStream;
@@ -40,10 +42,13 @@ public class CameraActivity extends Activity {
         super.onCreate(savedInstanceState);
 
 
+        LinearLayout ll = new LinearLayout(this);
+        ll.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         mVideoCapturer = new VideoCapturer(this);
+        ll.addView(mVideoCapturer);
 
-        setContentView(mVideoCapturer);
+        setContentView(ll);
     }
 
     public void moveToEditor() {
@@ -65,6 +70,7 @@ public class CameraActivity extends Activity {
     protected void onResume() {
         super.onResume();
         // The activity has become visible (it is now "resumed").
+        mVideoCapturer.doResume();
     }
     @Override
     protected void onPause() {

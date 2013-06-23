@@ -10,8 +10,10 @@ import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.widget.ImageView;
 
 import java.io.ByteArrayOutputStream;
@@ -28,7 +30,7 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
     private static final int SKIP_INITIAL = 10;
     private int framesCaptured = 0;
     private int framesSkipped = 0;
-    public static byte[][] frames = new byte[NUM_FRAMES][];
+    public static byte[][] frames = null;
     private boolean isGrabbing = false;
     private CameraActivity activity;
 
@@ -36,6 +38,14 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
         super(context);
         getHolder().addCallback(this);
         this.activity = (CameraActivity)context;
+    }
+
+    public void doResume() {
+        framesSkipped = 0;
+        framesCaptured = 0;
+        frames = null;
+        frames = new byte[NUM_FRAMES][];
+        isGrabbing = false;
     }
 
     @Override
@@ -46,11 +56,21 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
         getHolder().setFixedSize(720, 1280);
         final Camera.Size previewSize = mParameters.getPreviewSize();
 
-        mParameters.set("orientation", "landscape");
-        mCamera.setParameters(mParameters);
+        //mParameters.set("orientation", "landscape");
+        //mCamera.setParameters(mParameters);
+        mCamera.setDisplayOrientation(90);
+
+        setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                beginGrabbing();
+                return true;
+            }
+        });
 
         final VideoCapturer self = this;
 
+        // Display the preview image on this surface itself
         try {
             mCamera.setPreviewDisplay(getHolder());
         }
@@ -58,7 +78,7 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
             System.exit(1);
         }
 
-
+        // This hooks into each preview frame - and lets us store raw data for each frame
         mCamera.setPreviewCallback(new Camera.PreviewCallback(){
             public void onPreviewFrame(byte[] data, Camera camera) {
                 if(mParameters.getPreviewFormat() == ImageFormat.NV21) {
@@ -68,16 +88,19 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
                     img.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 50, out);
                     byte[] imageBytes = out.toByteArray();
 
-                    if(isGrabbing) {
+                    /*if(isGrabbing) {
                         Canvas recCanvas = new Canvas();
                         recCanvas.drawColor(Color.RED);
                         self.draw(recCanvas);
-                    }
+                    }*/
 
                     if(framesSkipped<SKIP_INITIAL) {
                         framesSkipped++;
                         return;
                     }
+
+                    if(!isGrabbing)
+                        return;
 
                     if(framesCaptured<NUM_FRAMES)
                         frames[framesCaptured++] = imageBytes;
@@ -92,7 +115,6 @@ public class VideoCapturer extends SurfaceView implements SurfaceHolder.Callback
         });
 
         mCamera.startPreview();
-        beginGrabbing();
     }
 
     public void beginGrabbing() {
